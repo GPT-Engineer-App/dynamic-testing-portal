@@ -1,12 +1,22 @@
-import { useState } from "react";
-import { Cat, Heart, Info, Paw } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Cat, Heart, Paw, Camera, Music, Moon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [likes, setLikes] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { toast } = useToast();
+
+  const catImages = [
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/1200px-Cat_November_2010-1a.jpg",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/1200px-Kittyply_edit1.jpg",
+  ];
 
   const catFacts = [
     "Cats have been domesticated for over 4,000 years.",
@@ -14,6 +24,8 @@ const Index = () => {
     "A group of cats is called a 'clowder'.",
     "Cats spend 70% of their lives sleeping.",
     "They have a third eyelid called the 'haw' to protect their eyes.",
+    "A cat's hearing is much more sensitive than humans and dogs.",
+    "Cats have over 20 vocalizations that they use to communicate with humans.",
   ];
 
   const catBreeds = [
@@ -21,33 +33,62 @@ const Index = () => {
     { name: "Persian", description: "Recognized for their long fur and flat faces." },
     { name: "Maine Coon", description: "One of the largest domestic cat breeds with tufted ears." },
     { name: "British Shorthair", description: "Famous for their round faces and dense coats." },
+    { name: "Sphynx", description: "Hairless breed known for their wrinkled skin and large ears." },
+    { name: "Bengal", description: "Wild-looking breed with spotted or marbled coat patterns." },
   ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % catImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLike = () => {
+    setLikes(likes + 1);
+    toast({
+      title: "Thanks for the love!",
+      description: "You're paw-some!",
+      duration: 3000,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-100 p-8">
       <div className="max-w-4xl mx-auto">
         <motion.h1 
-          className="text-5xl font-bold mb-6 flex items-center justify-center text-purple-600"
+          className="text-6xl font-bold mb-8 flex items-center justify-center text-purple-600"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Cat className="mr-2" /> All About Cats
+          <Cat className="mr-4 h-12 w-12" /> Meow-velous Cats
         </motion.h1>
         
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
+          className="relative mb-12"
         >
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg"
-            alt="A cute cat"
-            className="mx-auto object-cover w-full h-[400px] rounded-lg shadow-lg mb-8"
-          />
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={currentImageIndex}
+              src={catImages[currentImageIndex]}
+              alt="A cute cat"
+              className="mx-auto object-cover w-full h-[500px] rounded-lg shadow-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            />
+          </AnimatePresence>
+          <div className="absolute bottom-4 right-4 bg-white bg-opacity-70 rounded-full p-2">
+            <Camera className="h-6 w-6 text-purple-600" />
+          </div>
         </motion.div>
 
-        <Tabs defaultValue="facts" className="mb-8">
+        <Tabs defaultValue="facts" className="mb-12">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="facts">Cat Facts</TabsTrigger>
             <TabsTrigger value="breeds">Cat Breeds</TabsTrigger>
@@ -55,21 +96,21 @@ const Index = () => {
           <TabsContent value="facts">
             <Card>
               <CardHeader>
-                <CardTitle>Fascinating Feline Facts</CardTitle>
-                <CardDescription>Discover interesting tidbits about our feline friends.</CardDescription>
+                <CardTitle className="text-2xl">Fascinating Feline Facts</CardTitle>
+                <CardDescription>Discover interesting tidbits about our purr-fect friends.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {catFacts.map((fact, index) => (
                     <motion.li 
                       key={index}
-                      className="flex items-center"
+                      className="flex items-center bg-white p-3 rounded-lg shadow"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
                     >
-                      <Paw className="mr-2 h-4 w-4 text-purple-500" />
-                      {fact}
+                      <Paw className="mr-3 h-5 w-5 text-purple-500 flex-shrink-0" />
+                      <span>{fact}</span>
                     </motion.li>
                   ))}
                 </ul>
@@ -79,51 +120,60 @@ const Index = () => {
           <TabsContent value="breeds">
             <Card>
               <CardHeader>
-                <CardTitle>Popular Cat Breeds</CardTitle>
-                <CardDescription>Learn about some of the most beloved cat breeds.</CardDescription>
+                <CardTitle className="text-2xl">Popular Cat Breeds</CardTitle>
+                <CardDescription>Explore some of the most beloved cat breeds.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  {catBreeds.map((breed, index) => (
-                    <motion.div
-                      key={index}
-                      className="bg-white p-4 rounded-lg shadow"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <h3 className="font-semibold text-lg mb-2">{breed.name}</h3>
-                      <p className="text-sm text-gray-600">{breed.description}</p>
-                    </motion.div>
-                  ))}
-                </div>
+                <Carousel className="w-full max-w-xs mx-auto">
+                  <CarouselContent>
+                    {catBreeds.map((breed, index) => (
+                      <CarouselItem key={index}>
+                        <Card className="bg-white p-6 rounded-lg shadow-lg">
+                          <h3 className="font-semibold text-xl mb-3 text-purple-600">{breed.name}</h3>
+                          <p className="text-gray-600">{breed.description}</p>
+                        </Card>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
-        <Card>
+        <Card className="mb-12">
           <CardHeader>
-            <CardTitle>Show Some Love</CardTitle>
-            <CardDescription>If you're a cat lover, let us know!</CardDescription>
+            <CardTitle className="text-2xl">Show Some Love</CardTitle>
+            <CardDescription>If you're feline the love, let us know!</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button 
-              variant="outline" 
-              onClick={() => setLikes(likes + 1)}
-              className="flex items-center"
-            >
-              <Heart className="mr-2 h-4 w-4 text-red-500" />
-              Like
-            </Button>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <Button 
+                variant="outline" 
+                onClick={handleLike}
+                className="flex items-center text-lg px-6 py-3"
+              >
+                <Heart className="mr-2 h-6 w-6 text-red-500" />
+                Purr if you like!
+              </Button>
+            </motion.div>
           </CardContent>
           <CardFooter className="text-center">
-            <p className="w-full">This page has been liked {likes} times</p>
+            <p className="w-full text-lg">This page has been liked <span className="font-bold text-purple-600">{likes}</span> times</p>
           </CardFooter>
         </Card>
 
-        <footer className="mt-8 text-center text-gray-600">
-          <p>Created with <Heart className="inline-block h-4 w-4 text-red-500" /> by cat enthusiasts</p>
+        <footer className="mt-12 text-center text-gray-600">
+          <p className="flex items-center justify-center text-lg">
+            Created with <Heart className="mx-2 h-5 w-5 text-red-500" /> by cat enthusiasts
+          </p>
+          <div className="mt-4 flex justify-center space-x-4">
+            <Music className="h-6 w-6 text-purple-500" />
+            <Moon className="h-6 w-6 text-purple-500" />
+            <Paw className="h-6 w-6 text-purple-500" />
+          </div>
         </footer>
       </div>
     </div>
