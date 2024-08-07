@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Cat, Heart, Paw, Camera, Music, Moon, Star, Sparkles, Gift, Coffee } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { Cat, Heart, Paw, Camera, Music, Moon, Star, Sparkles, Gift, Coffee, Sun, Zap, Fish } from "lucide-react";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Index = () => {
   const [likes, setLikes] = useState(0);
@@ -20,7 +23,11 @@ const Index = () => {
   const [catName, setCatName] = useState("");
   const [treats, setTreats] = useState(5);
   const [nightMode, setNightMode] = useState(false);
+  const [catEnergy, setCatEnergy] = useState(100);
+  const [showCatAvatar, setShowCatAvatar] = useState(false);
   const { toast } = useToast();
+  const catAvatarRef = useRef(null);
+  const catAvatarControls = useAnimation();
 
   const catImages = [
     "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg",
@@ -29,6 +36,24 @@ const Index = () => {
     "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Sleeping_cat_on_her_back.jpg/1200px-Sleeping_cat_on_her_back.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cats_eyes_2007-2.jpg/1200px-Cats_eyes_2007-2.jpg",
   ];
+
+  useEffect(() => {
+    const energyInterval = setInterval(() => {
+      setCatEnergy((prevEnergy) => Math.max(prevEnergy - 5, 0));
+    }, 10000);
+
+    return () => clearInterval(energyInterval);
+  }, []);
+
+  useEffect(() => {
+    if (catEnergy === 0) {
+      toast({
+        title: "Cat is tired!",
+        description: "Your cat needs some rest or a treat!",
+        duration: 3000,
+      });
+    }
+  }, [catEnergy, toast]);
 
   const catFacts = [
     "Cats have been domesticated for over 4,000 years.",
@@ -69,17 +94,20 @@ const Index = () => {
       description: "You're paw-some!",
       duration: 3000,
     });
+    animateCatAvatar();
   };
 
   const handleTreat = () => {
     if (treats > 0) {
       setTreats(treats - 1);
       setCatHappiness(Math.min(catHappiness + 5, 100));
+      setCatEnergy(Math.min(catEnergy + 20, 100));
       toast({
         title: "Treat given!",
         description: `${catName || 'Your cat'} purrs with delight!`,
         duration: 2000,
       });
+      animateCatAvatar();
     } else {
       toast({
         title: "Out of treats!",
@@ -93,17 +121,56 @@ const Index = () => {
     setNightMode(!nightMode);
   };
 
+  const animateCatAvatar = () => {
+    catAvatarControls.start({
+      scale: [1, 1.2, 1],
+      rotate: [0, 10, -10, 0],
+      transition: { duration: 0.5 }
+    });
+  };
+
+  const handleCatNameChange = (e) => {
+    setCatName(e.target.value);
+    setShowCatAvatar(e.target.value.length > 0);
+  };
+
   return (
     <div className={`min-h-screen ${nightMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-b from-purple-100 to-pink-100'} p-8 transition-colors duration-500`}>
       <div className="max-w-4xl mx-auto">
-        <motion.h1 
-          className={`text-6xl font-bold mb-8 flex items-center justify-center ${nightMode ? 'text-purple-300' : 'text-purple-600'}`}
+        <motion.div 
+          className="relative"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Cat className="mr-4 h-12 w-12" /> Meow-velous Cats
-        </motion.h1>
+          <h1 className={`text-6xl font-bold mb-8 flex items-center justify-center ${nightMode ? 'text-purple-300' : 'text-purple-600'}`}>
+            <Cat className="mr-4 h-12 w-12" /> Meow-velous Cats
+          </h1>
+          {showCatAvatar && (
+            <motion.div
+              className="absolute top-0 right-0"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <motion.div animate={catAvatarControls}>
+                      <Avatar ref={catAvatarRef}>
+                        <AvatarImage src={catImages[0]} alt={catName} />
+                        <AvatarFallback>{catName[0]}</AvatarFallback>
+                      </Avatar>
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{catName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </motion.div>
+          )}
+        </motion.div>
         
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -143,7 +210,7 @@ const Index = () => {
                 <Input
                   id="catName"
                   value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
+                  onChange={handleCatNameChange}
                   placeholder="Enter cat name"
                   className="max-w-xs"
                 />
@@ -168,6 +235,24 @@ const Index = () => {
                   checked={nightMode}
                   onCheckedChange={toggleNightMode}
                 />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl">Cat Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label>Happiness</Label>
+                <Progress value={catHappiness} className={`h-2 ${nightMode ? 'bg-purple-900' : 'bg-purple-200'}`} />
+              </div>
+              <div>
+                <Label>Energy</Label>
+                <Progress value={catEnergy} className={`h-2 ${nightMode ? 'bg-yellow-900' : 'bg-yellow-200'}`} />
               </div>
             </div>
           </CardContent>
@@ -268,10 +353,6 @@ const Index = () => {
                 </Button>
               </motion.div>
             </div>
-            <div className="w-full max-w-xs">
-              <p className="text-center mb-2">Cat Happiness Meter</p>
-              <Progress value={catHappiness} className={`h-2 ${nightMode ? 'bg-purple-900' : 'bg-purple-200'}`} />
-            </div>
           </CardContent>
           <CardFooter className="text-center">
             <p className="w-full text-lg">
@@ -279,6 +360,34 @@ const Index = () => {
             </p>
           </CardFooter>
         </Card>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="mb-8">Cat Care Tips</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Cat Care Tips</DialogTitle>
+              <DialogDescription>
+                Keep your feline friend happy and healthy with these tips!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="flex items-center gap-4">
+                <Fish className="h-6 w-6 text-blue-500" />
+                <p>Provide a balanced diet with high-quality cat food.</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <Zap className="h-6 w-6 text-yellow-500" />
+                <p>Ensure daily playtime to keep your cat active and stimulated.</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <Sun className="h-6 w-6 text-orange-500" />
+                <p>Create a cozy spot for your cat to relax and sunbathe.</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <footer className={`mt-12 text-center ${nightMode ? 'text-gray-400' : 'text-gray-600'}`}>
           <motion.p 
